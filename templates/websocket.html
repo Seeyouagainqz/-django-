@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Container Info</title>
+</head>
+<body>
+    <h1>Container Info</h1>
+    <div id="info"></div>
+    <script>
+        const ws = new WebSocket('ws://localhost:8000/ws/container/');
+
+        ws.onmessage = function(event)
+        {
+            const data = JSON.parse(event.data);
+            document.getElementById('info').textContent = JSON.stringify(data, null, 2);
+            if (data.containers)
+            {
+                updateContainerDisplay(data.containers)
+            }
+        };
+
+        ws.onopen = function() {
+            console.log('WebSocket connection established.');
+        };
+
+        ws.onclose = function() {
+            console.log('WebSocket connection closed.');
+        };
+
+        function uddateContainerDisplay(container)
+        {
+            console.log('Docker Containers:', containers)
+        }
+
+    </script>
+
+
+
+</body>
+</html>

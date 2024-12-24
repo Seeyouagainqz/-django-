@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>前端终端，操作后端的docker容器</title>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/xterm@4.18.0/css/xterm.css">
+</head>
+
+
+<body class="bodyCss">
+    <div id="app">
+        <div id="terminal" ></div>
+    </div>
+</body>
+<script src="https://unpkg.com/xterm@4.18.0/lib/xterm.js"></script>
+<script src="https://lib.baomitu.com/vue/2.6.14/vue.js"></script>
+<script  src="https://unpkg.com/xterm-addon-fit@0.6.0/lib/xterm-addon-fit.js"></script>
+<script  src="https://unpkg.com/xterm-addon-attach@0.6.0/lib/xterm-addon-attach.js"></script>
+
+<script>
+    let wsTime = null
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                // 终端
+                term:{},
+                // websocket
+                ws:{}
+            }
+        },
+        created(){
+            // 初始化终端
+            this.initTerminal()
+        },
+        mounted() {
+            // 建立websocket连接
+            this.websocket()
+        },
+        beforeDestroy() {
+            this.ws.close()
+            this.term.dispose()
+        },
+        methods: {
+            // 初始化终端配置
+            initTerminal(){
+                this.term = new Terminal({
+                    rendererType: "canvas", //渲染类型
+                    // rows: 40, //行数，影响最小高度
+                    // cols: 100, // 列数，影响最小宽度
+                    convertEol: true, //启用时，光标将设置为下一行的开头
+                    // scrollback: 50, //终端中的滚动条回滚量
+                    disableStdin: false, //是否应禁用输入。
+                    cursorStyle: "underline", //光标样式
+                    cursorBlink: true, //光标闪烁
+                    theme: {
+                        foreground: '#F8F8F8',
+                        background: '#2D2E2C',
+                        cursor: "help", //设置光标
+                        lineHeight: 16,
+                    },
+                    fontFamily: '"Cascadia Code", Menlo, monospace'
+                });
+            },
+            // 自定义终端默认展示内容
+            writeDefaultInfo(){
+                let defaultInfo = [
+                '┌\x1b[1m terminals \x1b[0m─────────────────────────────────────────────────────────────────┐ ',
+                '│                                                                            │ ',
+                '│  \x1b[1;34m 欢迎使用Web Docker SSH \x1b[0m                                                  │ ',
+                '│                                                                            │ ',
+                '└────────────────────────────────────────────────────────────────────────────┘ ',]
+                this.term.write(defaultInfo.join('\n\r'))
+            },
+            // 建立websocket连接
+            websocket() {
+                // WebSocket start
+                if ('WebSocket' in window) {
+                	//需要修改ip和id
+                	//例如：const url = `ws://192.168.111.222:2375/v1.41/containers/0eb8aafb4e6e/attach/ws?logs=0&stream=1&stdin=1&stdout=1&stderr=1`
+                    const url = 'ws://localhost:8765'//`ws://127.0.0.0:8765/v1.41/containers/你的id/attach/ws?logs=0&stream=1&stdin=1&stdout=1&stderr=1`
+                    const ws = new WebSocket(url)
+                    this.ws = ws
+                    ws.onopen = (event) => {
+                        console.log('已建立连接：',event)
+                        // 输入换行符可让终端显示当前用户的工作路径
+                        ws.send('\n')
+                        // 窗口自适应插件
+                        const fitAddon = new FitAddon.FitAddon();
+                        // websocket自动收发消息插件
+                        const attachAddon = new AttachAddon.AttachAddon(ws)
+                        this.term.loadAddon(attachAddon)
+                        this.term.loadAddon(fitAddon)
+                        this.term.open(document.getElementById('terminal'));
+                        // 聚焦闪烁光标
+                        this.term.focus()
+                        // 窗口尺寸变化时，终端尺寸自适应
+                        window.onresize = () => {
+                            fitAddon.fit()
+                        }
+                        // 自定义终端默认展示内容
+                        this.writeDefaultInfo()
+                    };
+                    ws.onmessage = (event) => {
+                        console.log('接收信息：',event)
+                    };
+                    ws.onerror = (event) => {
+                        console.log('错误信息：', event)
+                        if (wsTime) {
+                            window.clearTimeout(wsTime)
+                            wsTime = null
+                        }
+                        wsTime = window.setTimeout(() => {
+                            this.websocket()
+                        }, 3000)
+                    };
+                    ws.onclose = (event) => {
+                        console.log('已关闭连接：', event)
+                        // if (wsTime) {
+                        //    window.clearTimeout(wsTime)
+                        //    wsTime = null
+                        // }
+                        // wsTime = window.setTimeout(() => {
+                        //    this.websocket()
+                        // }, 3000)
+                    };
+                } else {
+                    console.log('浏览器不支持 WebSocket..')
+                }
+                // WebSocket end
+            }
+        }
+    })
+</script>
+
+</html>

@@ -1,0 +1,71 @@
+{#<!DOCTYPE html>#}
+{#<html lang="en">#}
+{#<head>#}
+{#    <meta charset="UTF-8">#}
+{#    <title>Title</title>#}
+{#</head>#}
+{#<body>#}
+{##}
+{#</body>#}
+{#</html>#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Multiple Images</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" name="images" multiple accept="image/*">
+        <button type="submit">Upload</button>
+    </form>
+
+    <div id="response"></div>
+
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            var formData = new FormData();
+            var files = document.querySelector('input[type="file"]').files;
+
+            for (var i = 0; i < files.length; i++) {
+                formData.append('images', files[i]);
+            }
+
+            fetch('/api/upload/', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('response').innerHTML = 'Images uploaded successfully!';
+            })
+            .catch(error => {
+                document.getElementById('response').innerHTML = 'Error uploading images.';
+            });
+        });
+    </script>
+</body>
+</html>
